@@ -35,3 +35,19 @@ DisinfoMM/
 ├── code/                  # (Planned) Baseline models and preprocessing scripts
 ├── LICENSE
 └── README.md
+
+## 🚧 Status
+
+This repository is under preparation. The dataset and code will be released soon.
+
+Please ⭐️ star or watch the repo to stay updated.
+
+---
+
+## 📬 Contact
+
+If you have questions or would like early access, feel free to contact:
+
+**Shuhan Cui**  
+The University of Tokyo  
+📧 syokan [at] g.ecc.u-tokyo.ac.jp
