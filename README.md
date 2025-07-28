@@ -35,6 +35,7 @@ DisinfoMM/
 ├── code/                  # (Planned) Baseline models and preprocessing scripts
 ├── LICENSE
 └── README.md
+```
 
 ## 🚧 Status
 
