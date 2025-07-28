@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "If you use this dataset, please cite the following paper."
+title: "A Multilingual, Multimodal Dataset for Disinformation and Out-of-Context Analysis with Rich Supportive Information"
+authors:
+  - family-names: Cui
+    given-names: Shuhan
+    affiliation: The University of Tokyo, Tokyo, Japan
+  - family-names: Wang
+    given-names: Hanrui
+    affiliation: National Institute of Informatics, Tokyo, Japan
+  - family-names: Chang
+    given-names: Ching-Chun
+    affiliation: National Institute of Informatics, Tokyo, Japan
+  - family-names: Nguyen
+    given-names: Huy H.
+    affiliation: National Institute of Informatics, Tokyo, Japan
+  - family-names: Echizen
+    given-names: Isao
+    affiliation: National Institute of Informatics, Tokyo, Japan
+date-released: 2025-10-13
+version: "1.0"
+doi: 10.1145/3716553.3750813
+url: https://github.com/SaiSyokan/DisinfoMM
+conference:
+  name: "Proceedings of the 27th International Conference on Multimodal Interaction (ICMI '25)"
+  location: "Canberra, ACT, Australia"
+  dates: "October 13–17, 2025"
+isbn: "979-8-4007-1499-3/2025/10"
+license: CC-BY-4.0
+type: dataset
