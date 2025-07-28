@@ -1,4 +1,5 @@
 # DisinfoMM
+[![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
 
 **DisinfoMM** is a multilingual and multimodal dataset for disinformation and out-of-context (OOC) detection, released with our ICMI 2025 paper. The dataset includes fact-checked claims with paired images and multilingual evidence, supporting five-level veracity classification and evidence-aware model training.
 
