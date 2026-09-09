@@ -1,0 +1,11 @@
+name: disinfomm
+channels:
+  - pytorch
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - pytorch>=2.1
+  - torchvision>=0.16
+  - pip:
+      - -e ".[train,collect]"

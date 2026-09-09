@@ -1,0 +1,22 @@
+model,train_dataset,test_dataset,all_accuracy,authentic_accuracy,disinformation_accuracy
+Basic CLIP,FACTIFY,FACTIFY,80.10,77.00,83.20
+Basic CLIP,FACTIFY,NewsCLIPpings,49.00,1.40,96.60
+Basic CLIP,FACTIFY,DisinfoMM English,47.66,0.27,99.11
+Basic CLIP,NewsCLIPpings,FACTIFY,51.30,80.60,22.00
+Basic CLIP,NewsCLIPpings,NewsCLIPpings,79.20,78.40,80.00
+Basic CLIP,NewsCLIPpings,DisinfoMM English,51.63,72.75,28.70
+Basic CLIP,DisinfoMM English,FACTIFY,56.30,73.80,38.80
+Basic CLIP,DisinfoMM English,NewsCLIPpings,51.30,62.40,40.20
+Basic CLIP,DisinfoMM English,DisinfoMM English,65.53,68.12,62.72
+Multilingual CLIP,DisinfoMM English,FACTIFY,51.73,25.37,70.65
+Multilingual CLIP,DisinfoMM English,NewsCLIPpings,49.99,9.31,90.67
+Multilingual CLIP,DisinfoMM English,DisinfoMM English,61.91,54.25,69.88
+Evidence-based CLIP,FACTIFY,FACTIFY,85.67,83.45,87.73
+Evidence-based CLIP,FACTIFY,NewsCLIPpings,54.57,7.85,100.00
+Evidence-based CLIP,FACTIFY,DisinfoMM English,53.23,6.72,100.00
+Evidence-based CLIP,NewsCLIPpings,FACTIFY,56.87,87.05,26.53
+Evidence-based CLIP,NewsCLIPpings,NewsCLIPpings,83.77,83.85,83.53
+Evidence-based CLIP,NewsCLIPpings,DisinfoMM English,57.20,79.20,33.23
+Evidence-based CLIP,DisinfoMM English,FACTIFY,61.87,80.25,43.33
+Evidence-based CLIP,DisinfoMM English,NewsCLIPpings,56.87,68.85,44.73
+Evidence-based CLIP,DisinfoMM English,DisinfoMM English,66.97,68.36,65.36

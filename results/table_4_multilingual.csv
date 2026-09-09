@@ -1,0 +1,5 @@
+train_dataset,test_dataset,all_accuracy,authentic_accuracy,disinformation_accuracy
+DisinfoMM English,DisinfoMM Multilingual,63.83,61.58,66.27
+DisinfoMM English,DisinfoMM English,65.25,65.94,64.50
+DisinfoMM Multilingual,DisinfoMM Multilingual,67.60,70.13,64.96
+DisinfoMM Multilingual,DisinfoMM English,70.75,71.48,69.96

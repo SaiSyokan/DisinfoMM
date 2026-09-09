@@ -1,0 +1,5 @@
+model,train_dataset,test_dataset,all_accuracy,authentic_accuracy,disinformation_accuracy
+Basic CLIP,DisinfoMM English,DisinfoMM English,65.53,68.12,62.72
+Multilingual CLIP,DisinfoMM English,DisinfoMM English,61.91,54.25,69.88
+Evidence-based CLIP,DisinfoMM English,DisinfoMM English,66.97,68.36,65.36
+Supportive-information model,DisinfoMM English,DisinfoMM English,67.23,66.76,67.75

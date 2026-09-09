@@ -1,30 +1,44 @@
 cff-version: 1.2.0
-message: "If you use this dataset, please cite the following paper."
-title: "A Multilingual, Multimodal Dataset for Disinformation and Out-of-Context Analysis with Rich Supportive Information"
+message: "If you use DisinfoMM, please cite the ICMI 2025 paper."
+title: "DisinfoMM: code and data tooling for multilingual multimodal disinformation analysis"
+type: software
+version: "1.0.0"
+date-released: 2026-09-09
+url: "https://github.com/SaiSyokan/DisinfoMM"
+repository-code: "https://github.com/SaiSyokan/DisinfoMM"
+license: MIT
 authors:
   - family-names: Cui
     given-names: Shuhan
-    affiliation: The University of Tokyo, Tokyo, Japan
+    affiliation: The University of Tokyo
   - family-names: Wang
     given-names: Hanrui
-    affiliation: National Institute of Informatics, Tokyo, Japan
+    affiliation: National Institute of Informatics
   - family-names: Chang
     given-names: Ching-Chun
-    affiliation: National Institute of Informatics, Tokyo, Japan
+    affiliation: National Institute of Informatics
   - family-names: Nguyen
     given-names: Huy H.
-    affiliation: National Institute of Informatics, Tokyo, Japan
+    affiliation: National Institute of Informatics
   - family-names: Echizen
     given-names: Isao
-    affiliation: National Institute of Informatics, Tokyo, Japan
-date-released: 2025-10-13
-version: "1.0"
-doi: 10.1145/3716553.3750813
-url: https://github.com/SaiSyokan/DisinfoMM
-conference:
-  name: "Proceedings of the 27th International Conference on Multimodal Interaction (ICMI '25)"
-  location: "Canberra, ACT, Australia"
-  dates: "October 13–17, 2025"
-isbn: "979-8-4007-1499-3/2025/10"
-license: CC-BY-4.0
-type: dataset
+    affiliation: National Institute of Informatics
+preferred-citation:
+  type: conference-paper
+  title: "A Multilingual, Multimodal Dataset for Disinformation and Out-of-Context Analysis with Rich Supportive Information"
+  authors:
+    - family-names: Cui
+      given-names: Shuhan
+    - family-names: Wang
+      given-names: Hanrui
+    - family-names: Chang
+      given-names: Ching-Chun
+    - family-names: Nguyen
+      given-names: Huy H.
+    - family-names: Echizen
+      given-names: Isao
+  collection-title: "Proceedings of the 27th International Conference on Multimodal Interaction"
+  year: 2025
+  start: 643
+  end: 651
+  doi: "10.1145/3716553.3750813"

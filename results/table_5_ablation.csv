@@ -1,0 +1,5 @@
+training_samples,balanced,supportive_information,all_accuracy,authentic_accuracy,disinformation_accuracy
+4000,false,false,62.13,64.21,60.21
+7000,false,false,63.47,65.55,61.55
+7000,true,false,65.25,65.94,64.50
+7000,true,true,67.23,66.76,67.75
