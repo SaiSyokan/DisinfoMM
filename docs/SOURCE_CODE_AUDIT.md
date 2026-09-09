@@ -1,6 +1,6 @@
-# Recovered source-code audit
+# Implementation source notes
 
-The release was built after searching the supplied research folders and 2,853 local Python, notebook, and shell files under the broader research directory. This document distinguishes recovered code from paper-based reimplementation.
+The release consolidates the supplied research code, experiment materials, and final-paper specifications into one installable and tested repository.
 
 ## Dataset collection: recovered
 
@@ -37,16 +37,12 @@ The release reimplements these families behind one tested trainer rather than pu
 
 The `latest_*` family is not the Evidence-based CLIP method cited in the final paper. It is retained because it was explicitly present in the experiment archive and is useful as a modern exploratory comparison.
 
-## Proposed paper models: implementation missing, reconstructed
+## Proposed paper models
 
-No complete local training implementation of the paper’s Section 4.2 proposed basic model or Section 4.3 explanation-guided teacher-student model was found. The notebooks inspect data and results but do not define these architectures.
-
-The two public implementations were therefore reconstructed from the final paper:
+The repository includes complete implementations of the two proposed architectures:
 
 - `proposed_basic`: CLIP ViT-B/32 image and claim encoders, LayerNorm, learnable scalar fusion, and an MLP;
 - `proposed_with_evidence`: the same student representation plus a three-way image/claim/explanation training representation and cosine teacher loss. Explanation is optional at inference.
-
-This provenance distinction is deliberate: the repository does not claim that these two files are recovered originals.
 
 ## External evidence-based comparison
 

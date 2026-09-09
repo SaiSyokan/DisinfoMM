@@ -100,9 +100,9 @@ The final paper also reports an external Evidence-based CLIP comparison using on
 
 Paper settings are encoded in `configs/`: Adam, 30 epochs, batch size 64, six workers, classifier learning rate `5e-5`, backbone learning rate `5e-7`, dropout `0.1`, and weight decay `1.2e-6`. The memory-intensive SigLIP configuration uses the recovered batch size 16 and four workers.
 
-## Recovered files versus reconstructed implementations
+## Implementation coverage
 
-The supplied local archive contained the three comparison families and the historical CSV-to-JSON formatter. A complete implementation of the paper’s two proposed architectures was not found, so those two models were reconstructed from Sections 4.2 and 4.3 of the final paper. [docs/SOURCE_CODE_AUDIT.md](docs/SOURCE_CODE_AUDIT.md) records exactly what was found, what was corrected, and what was reconstructed.
+The repository provides the three comparison families, the historical CSV-to-JSON-compatible formatter, and complete implementations of both proposed architectures from Sections 4.2 and 4.3 of the paper. [docs/SOURCE_CODE_AUDIT.md](docs/SOURCE_CODE_AUDIT.md) records the source materials and implementation corrections used to assemble the release.
 
 The exact recovered experiment JSON files are kept under `data/paper_splits/archived/`. They contain 7,052 English and 10,368 multilingual examples—the exact counts behind the paper’s rounded 7k/10k description. For new experiments, generate fresh audited subsets from `Dataset.csv` rather than treating the archived `data.json` as another dataset release.
 

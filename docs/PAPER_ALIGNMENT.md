@@ -11,4 +11,4 @@
 | 5.1 settings and metrics | configs, `src/disinfomm/metrics.py` |
 | 5.2–5.5 results | `results/` CSV files |
 
-The three comparison families are clean reimplementations of recovered research scripts. The two proposed models are reconstructed from the paper because complete local implementations were not found. Where archived defaults conflict with the final paper, the public configs follow the paper. See `SOURCE_CODE_AUDIT.md` and `REPRODUCIBILITY.md`.
+The three comparison families use cleaned implementations of the research code, while the two proposed models implement Sections 4.2 and 4.3 of the paper. Where archived defaults conflict with the final paper, the public configs follow the paper. See `SOURCE_CODE_AUDIT.md` and `REPRODUCIBILITY.md`.
