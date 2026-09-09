@@ -120,6 +120,114 @@ def append_jsonl(path: Path, records: Iterable[dict]) -> int:
     return count
 
 
+DATASET_COLUMNS = [
+    "Num", "Website", "Date", "Image", "Claim", "Evaluation", "Label",
+    "Keywords", "Tags", "Article Link", "Declaration Link", "Explanation",
+    "Article sources", "Process",
+]
+
+
+def append_dataset_csv(path: Path, records: Iterable[dict]) -> int:
+    """Append collected canonical records using the original Dataset.csv columns."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    write_header = not path.exists() or path.stat().st_size == 0
+    count = 0
+    with path.open("a", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=DATASET_COLUMNS)
+        if write_header:
+            writer.writeheader()
+        for record in records:
+            writer.writerow(
+                {
+                    "Num": record.get("source_num") or record.get("id", ""),
+                    "Website": record.get("source", ""),
+                    "Date": record.get("published_at", ""),
+                    "Image": record.get("image_url", ""),
+                    "Claim": record.get("claim", ""),
+                    "Evaluation": record.get("label_five", "Unknown"),
+                    "Label": record.get("label_source", ""),
+                    "Keywords": ",".join(record.get("keywords", [])),
+                    "Tags": ",".join(record.get("tags", [])),
+                    "Article Link": record.get("fact_check_url", ""),
+                    "Declaration Link": record.get("claim_source_url", ""),
+                    "Explanation": record.get("explanation", ""),
+                    "Article sources": ",".join(record.get("evidence_urls", [])),
+                    "Process": ",".join(record.get("evidence_domains", [])),
+                }
+            )
+            count += 1
+    return count
+
+
+def harmonize_csv(input_path: Path, output_path: Path) -> dict:
+    """Normalize the Evaluation column while preserving the original CSV schema."""
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    counts: Counter[str] = Counter()
+    with input_path.open(encoding="utf-8-sig", newline="") as source, output_path.open(
+        "w", encoding="utf-8", newline=""
+    ) as target:
+        reader = csv.DictReader(source)
+        if reader.fieldnames is None:
+            raise ValueError("CSV has no header")
+        missing = set(DATASET_COLUMNS) - set(reader.fieldnames)
+        if missing:
+            raise ValueError(f"CSV is missing required columns: {sorted(missing)}")
+        writer = csv.DictWriter(target, fieldnames=reader.fieldnames)
+        writer.writeheader()
+        for row in reader:
+            label = normalize_label(row.get("Evaluation", ""))
+            if label is FiveLevelLabel.UNKNOWN:
+                label = normalize_label(row.get("Label", ""))
+            row["Evaluation"] = label.value
+            writer.writerow(row)
+            counts["records"] += 1
+            counts[f"label:{label.value}"] += 1
+    return dict(sorted(counts.items()))
+
+
+def write_source_link_lists(
+    csv_path: Path,
+    output_dir: Path,
+    *,
+    frequent_threshold: int = 100,
+    important_threshold: int = 300,
+) -> dict:
+    """Rebuild the paper's all/frequent/important evidence-domain lists."""
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    links: list[str] = []
+    with csv_path.open(encoding="utf-8-sig", newline="") as stream:
+        for row in csv.DictReader(stream):
+            links.extend(_urls(row.get("Article sources")))
+    domain_counts = Counter(
+        urlparse(url).netloc.lower().removeprefix("www.") for url in links
+    )
+    with (output_dir / "all_links.csv").open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.writer(stream)
+        writer.writerow(["url"])
+        writer.writerows([url] for url in links)
+    for filename, threshold in (
+        ("frequent_domains.csv", frequent_threshold),
+        ("important_domains.csv", important_threshold),
+    ):
+        with (output_dir / filename).open("w", encoding="utf-8", newline="") as stream:
+            writer = csv.writer(stream)
+            writer.writerow(["domain", "count"])
+            writer.writerows(
+                (domain, count)
+                for domain, count in sorted(domain_counts.items(), key=lambda item: (-item[1], item[0]))
+                if count > threshold
+            )
+    return {
+        "links": len(links),
+        "domains": len(domain_counts),
+        "frequent_domains": sum(count > frequent_threshold for count in domain_counts.values()),
+        "important_domains": sum(count > important_threshold for count in domain_counts.values()),
+    }
+
+
 def validate_jsonl(path: Path, *, require_binary: bool = False) -> dict:
     ids: set[str] = set()
     errors: list[str] = []

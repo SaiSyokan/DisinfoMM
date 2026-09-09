@@ -40,15 +40,18 @@ def build_model(config: dict):
     backbone, _, preprocess = open_clip.create_model_and_transforms(
         model_name, pretrained=pretrained
     )
-    variant = config.get("model", "basic_clip")
+    variant = config.get("model", "proposed_basic")
     dropout = float(config.get("dropout", 0.1))
-    if variant == "basic_clip":
-        model = _baseline_class(torch, nn, functional)(backbone, dropout)
+    if variant == "comparison_basic":
+        model = _comparison_class(torch, nn, functional)(backbone, dropout)
         tokenizer = open_clip.get_tokenizer(model_name)
-    elif variant == "supportive_clip":
+    elif variant in {"proposed_basic", "basic_clip"}:
+        model = _proposed_basic_class(torch, nn, functional)(backbone, dropout)
+        tokenizer = open_clip.get_tokenizer(model_name)
+    elif variant in {"proposed_with_evidence", "supportive_clip"}:
         model = _supportive_class(torch, nn, functional)(backbone, dropout)
         tokenizer = open_clip.get_tokenizer(model_name)
-    elif variant == "multilingual_clip":
+    elif variant in {"comparison_multilingual", "multilingual_clip"}:
         try:
             from multilingual_clip import pt_multilingual_clip
             from transformers import AutoTokenizer
@@ -59,13 +62,16 @@ def build_model(config: dict):
         )
         text_encoder = pt_multilingual_clip.MultilingualCLIP.from_pretrained(text_name)
         tokenizer = AutoTokenizer.from_pretrained(text_name)
-        model = _multilingual_class(torch, nn, functional)(
+        model = _comparison_multilingual_class(torch, nn, functional)(
             backbone,
             text_encoder,
             tokenizer,
             int(config.get("multilingual_dim", 768)),
             dropout,
         )
+    elif variant == "comparison_latest":
+        model = _comparison_class(torch, nn, functional)(backbone, dropout)
+        tokenizer = open_clip.get_tokenizer(model_name)
     else:
         raise ValueError(f"Unknown model variant: {variant!r}")
     return model, preprocess, tokenizer
@@ -81,9 +87,28 @@ def _mlp(nn, dim: int, dropout: float):
     )
 
 
-def _baseline_class(torch, nn, functional):
-    class BaselineCLIPDetector(nn.Module):
-        """Section 4.2: LayerNorm, learned image/text fusion, and an MLP."""
+def _comparison_class(torch, nn, functional):
+    class ComparisonCLIPDetector(nn.Module):
+        """Recovered comparison code: normalized element-wise product and linear head."""
+
+        def __init__(self, backbone, dropout: float = 0.1):
+            super().__init__()
+            self.backbone = backbone
+            dim = _output_dim(backbone)
+            self.dropout = nn.Dropout(dropout)
+            self.classifier = nn.Linear(dim, 1)
+
+        def forward(self, images, text_tokens, **_):
+            image = functional.normalize(self.backbone.encode_image(images), dim=-1)
+            text = functional.normalize(self.backbone.encode_text(text_tokens), dim=-1)
+            return self.classifier(self.dropout(image * text))
+
+    return ComparisonCLIPDetector
+
+
+def _proposed_basic_class(torch, nn, functional):
+    class ProposedBasicDetector(nn.Module):
+        """Paper Section 4.2: LayerNorm, learned scalar fusion, and an MLP."""
 
         def __init__(self, backbone, dropout: float = 0.1):
             super().__init__()
@@ -107,11 +132,15 @@ def _baseline_class(torch, nn, functional):
         def forward(self, images, text_tokens, **_):
             return self.classifier(self.student_representation(images, text_tokens))
 
-    return BaselineCLIPDetector
+    return ProposedBasicDetector
+
+
+# Backwards-compatible internal name used by the first public release.
+_baseline_class = _proposed_basic_class
 
 
 def _supportive_class(torch, nn, functional):
-    Baseline = _baseline_class(torch, nn, functional)
+    Baseline = _proposed_basic_class(torch, nn, functional)
 
     class SupportiveInformationDetector(Baseline):
         """Section 4.3 teacher–student model with optional explanation input."""
@@ -155,9 +184,9 @@ def _supportive_class(torch, nn, functional):
     return SupportiveInformationDetector
 
 
-def _multilingual_class(torch, nn, functional):
-    class MultilingualCLIPDetector(nn.Module):
-        """CLIP image encoder plus an XLM-R text encoder and learned projection."""
+def _comparison_multilingual_class(torch, nn, functional):
+    class ComparisonMultilingualCLIPDetector(nn.Module):
+        """Recovered multilingual comparison with XLM-R projection and product fusion."""
 
         def __init__(
             self, backbone, text_encoder, tokenizer, text_dim: int = 768, dropout: float = 0.1
@@ -167,17 +196,18 @@ def _multilingual_class(torch, nn, functional):
             self.text_encoder = text_encoder
             self.tokenizer = tokenizer
             image_dim = _output_dim(backbone)
-            self.image_norm = nn.LayerNorm(image_dim)
-            self.text_norm = nn.LayerNorm(image_dim)
             self.text_projection = nn.Linear(text_dim, image_dim)
-            self.alpha_logit = nn.Parameter(torch.tensor(0.0))
-            self.classifier = _mlp(nn, image_dim, dropout)
+            self.dropout = nn.Dropout(dropout)
+            self.classifier = nn.Linear(image_dim, 1)
 
         def forward(self, images, text_tokens, **_):
-            image = functional.normalize(self.image_norm(self.backbone.encode_image(images)), dim=-1)
+            image = functional.normalize(self.backbone.encode_image(images), dim=-1)
             encoded = self.text_encoder.forward(text_tokens, self.tokenizer)
-            text = functional.normalize(self.text_norm(self.text_projection(encoded)), dim=-1)
-            alpha = torch.sigmoid(self.alpha_logit)
-            return self.classifier(alpha * image + (1.0 - alpha) * text)
+            text = functional.normalize(self.text_projection(encoded), dim=-1)
+            return self.classifier(self.dropout(image * text))
 
-    return MultilingualCLIPDetector
+    return ComparisonMultilingualCLIPDetector
+
+
+# Backwards-compatible internal name used by the first public release.
+_multilingual_class = _comparison_multilingual_class

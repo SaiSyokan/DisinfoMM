@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import csv
 import time
 from pathlib import Path
 from urllib.parse import urljoin
 
-from ..io import append_jsonl, read_jsonl
-from .adapters import parse_pagella, parse_poligrafo, parse_snopes
+from ..io import append_dataset_csv, append_jsonl, read_jsonl
+from .adapters import enrich_pagella, parse_pagella, parse_poligrafo, parse_snopes
 
 
 def _dependencies():
@@ -40,9 +41,15 @@ def collect(
     requests, BeautifulSoup = _dependencies()
     session = requests.Session()
     session.headers.update({"User-Agent": user_agent})
-    existing = {
-        str(x.get("fact_check_url")) for x in read_jsonl(output)
-    } if output.exists() else set()
+    if output.exists() and output.suffix.lower() == ".csv":
+        with output.open(encoding="utf-8-sig", newline="") as stream:
+            existing = {
+                str(row.get("Article Link", "")) for row in csv.DictReader(stream)
+            }
+    else:
+        existing = {
+            str(x.get("fact_check_url")) for x in read_jsonl(output)
+        } if output.exists() else set()
     records = []
     skipped = 0
 
@@ -55,6 +62,19 @@ def collect(
             for article in _get(session, url, timeout).json():
                 if limit is not None and len(records) >= limit:
                     break
+                linked = (article.get("acf") or {}).get("articolo") or {}
+                linked_id = linked.get("ID") if isinstance(linked, dict) else None
+                if linked_id:
+                    linked_url = (
+                        "https://cdn.pagellapolitica.it/wp-json/wp/v2/posts/"
+                        f"{linked_id}?_embed=wp:featuredmedia,wp:term"
+                    )
+                    try:
+                        article = enrich_pagella(
+                            article, _get(session, linked_url, timeout).json()
+                        )
+                    except (ValueError, OSError):
+                        pass
                 record = parse_pagella(article)
                 if record["fact_check_url"] in existing:
                     skipped += 1
@@ -94,5 +114,8 @@ def collect(
                 break
             next_url = urljoin(next_url, next_node.get("href", ""))
 
-    append_jsonl(output, records)
+    if output.suffix.lower() == ".csv":
+        append_dataset_csv(output, records)
+    else:
+        append_jsonl(output, records)
     return {"collected": len(records), "existing": skipped}

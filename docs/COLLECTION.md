@@ -11,10 +11,17 @@ The release implementation retains the same source coverage and provenance field
 ```bash
 python -m pip install -e '.[collect]'
 export DISINFOMM_CONTACT='mailto:your-address@example.org'
-disinfomm collect snopes --output collected/snopes.jsonl --pages 1 --delay 2
+python collection/collect_snopes.py --output collected/snopes.csv --pages 1 --delay 2
 ```
 
-Run the command separately for `poligrafo` and `pagella`, then validate and review `Unknown` labels. Do not merge a live run directly into an archival paper snapshot.
+Run the corresponding entry point for `poligrafo` and `pagella`, then harmonize and review `Unknown` labels:
+
+```bash
+python collection/harmonize.py collected/combined.csv collected/harmonized.csv \
+  --source-lists collected/source_lists
+```
+
+Do not merge a live run directly into the archival paper snapshot.
 
 ## Operational rules
 

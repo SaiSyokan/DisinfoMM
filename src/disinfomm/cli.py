@@ -8,8 +8,15 @@ import os
 from pathlib import Path
 
 from .collection import collect
+from .csv_dataset import prepare_experiment_splits
 from .download import download_images
-from .io import read_jsonl, standardize_csv, validate_jsonl
+from .io import (
+    harmonize_csv,
+    read_jsonl,
+    standardize_csv,
+    validate_jsonl,
+    write_source_link_lists,
+)
 from .metrics import binary_metrics
 from .splits import make_splits
 
@@ -21,6 +28,24 @@ def _parser() -> argparse.ArgumentParser:
     command = sub.add_parser("standardize", help="convert the historical CSV to canonical JSONL")
     command.add_argument("input", type=Path)
     command.add_argument("output", type=Path)
+
+    command = sub.add_parser("harmonize", help="normalize Dataset.csv evaluations")
+    command.add_argument("input", type=Path)
+    command.add_argument("output", type=Path)
+    command.add_argument("--source-lists", type=Path)
+    command.add_argument("--frequent-threshold", type=int, default=100)
+    command.add_argument("--important-threshold", type=int, default=300)
+
+    command = sub.add_parser(
+        "prepare-experiments",
+        help="build balanced experiment JSON files directly from Dataset.csv",
+    )
+    command.add_argument("dataset", type=Path)
+    command.add_argument("output", type=Path)
+    command.add_argument("--regime", choices=["english", "multilingual"], required=True)
+    command.add_argument("--size", type=int, required=True)
+    command.add_argument("--fake-ratio", type=float, default=0.5)
+    command.add_argument("--seed", type=int, default=1111)
 
     command = sub.add_parser("validate", help="validate a canonical JSONL manifest")
     command.add_argument("manifest", type=Path)
@@ -63,6 +88,24 @@ def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     if args.command == "standardize":
         result = dict(standardize_csv(args.input, args.output))
+    elif args.command == "harmonize":
+        result = harmonize_csv(args.input, args.output)
+        if args.source_lists:
+            result["source_lists"] = write_source_link_lists(
+                args.output,
+                args.source_lists,
+                frequent_threshold=args.frequent_threshold,
+                important_threshold=args.important_threshold,
+            )
+    elif args.command == "prepare-experiments":
+        result = prepare_experiment_splits(
+            args.dataset,
+            args.output,
+            regime=args.regime,
+            size=args.size,
+            fake_ratio=args.fake_ratio,
+            seed=args.seed,
+        )
     elif args.command == "validate":
         result = validate_jsonl(args.manifest, require_binary=args.require_binary)
         if not result["valid"]:

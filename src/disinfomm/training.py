@@ -60,17 +60,19 @@ def run(config_path: Path, *, evaluate_only: bool = False, checkpoint: Path | No
             image_path = Path(row.get("image_path", ""))
             if str(image_path) and not image_path.is_absolute():
                 image_path = self.media_root / image_path
-            if not str(row.get("image_path", "")):
+            if not str(row.get("image_path", "")) or not image_path.exists():
                 media_id = str(row.get("image_record_id") or row.get("id"))
                 matches = sorted(self.media_root.glob(f"{media_id}.*"))
                 if not matches:
-                    raise FileNotFoundError(f"No downloaded media for {media_id!r} in {self.media_root}")
+                    raise FileNotFoundError(
+                        f"No downloaded media for {media_id!r} in {self.media_root}"
+                    )
                 image_path = matches[0]
             with Image.open(image_path) as image:
                 image_tensor = preprocess(image.convert("RGB"))
             return row, image_tensor
 
-    multilingual = config.get("model") == "multilingual_clip"
+    multilingual = config.get("model") in {"comparison_multilingual", "multilingual_clip"}
 
     def collate(batch):
         rows, images = zip(*batch)
@@ -155,7 +157,7 @@ def run(config_path: Path, *, evaluate_only: bool = False, checkpoint: Path | No
                 move_tokens(explanation_tokens) if explanation_tokens is not None else None
             )
             optimizer.zero_grad(set_to_none=True)
-            if config.get("model") == "supportive_clip":
+            if config.get("model") in {"proposed_with_evidence", "supportive_clip"}:
                 loss, _ = model.objective(
                     images,
                     tokens,

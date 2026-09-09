@@ -1,0 +1,16 @@
+model: comparison_latest
+clip_model: ViT-SO400M-14-SigLIP
+pretrained: webli
+train_manifest: ../data/splits/english/jsonl/train.jsonl
+validation_manifest: ../data/splits/english/jsonl/validation.jsonl
+test_manifest: ../data/splits/english/jsonl/test.jsonl
+media_root: ../media
+run_dir: ../runs/comparison_latest
+epochs: 30
+batch_size: 16
+num_workers: 4
+dropout: 0.1
+lr_backbone: 5.0e-7
+lr_classifier: 5.0e-5
+weight_decay: 1.2e-6
+seed: 1111

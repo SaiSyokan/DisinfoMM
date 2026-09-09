@@ -4,7 +4,7 @@ torch = pytest.importorskip("torch")
 from torch import nn
 from torch.nn import functional
 
-from disinfomm.models import _baseline_class, _supportive_class
+from disinfomm.models import _baseline_class, _comparison_class, _supportive_class
 
 
 class TinyBackbone(nn.Module):
@@ -23,6 +23,11 @@ class TinyBackbone(nn.Module):
 
 def test_baseline_forward_shape():
     model = _baseline_class(torch, nn, functional)(TinyBackbone(), dropout=0.0)
+    assert model(torch.randn(2, 3), torch.tensor([[1, 2], [3, 4]])).shape == (2, 1)
+
+
+def test_comparison_forward_shape():
+    model = _comparison_class(torch, nn, functional)(TinyBackbone(), dropout=0.0)
     assert model(torch.randn(2, 3), torch.tensor([[1, 2], [3, 4]])).shape == (2, 1)
 
 

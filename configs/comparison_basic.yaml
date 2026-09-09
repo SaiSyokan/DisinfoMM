@@ -1,0 +1,16 @@
+model: comparison_basic
+clip_model: ViT-B-32
+pretrained: openai
+train_manifest: ../data/splits/english/jsonl/train.jsonl
+validation_manifest: ../data/splits/english/jsonl/validation.jsonl
+test_manifest: ../data/splits/english/jsonl/test.jsonl
+media_root: ../media
+run_dir: ../runs/comparison_basic
+epochs: 30
+batch_size: 64
+num_workers: 6
+dropout: 0.1
+lr_backbone: 5.0e-7
+lr_classifier: 5.0e-5
+weight_decay: 1.2e-6
+seed: 1111

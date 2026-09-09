@@ -12,33 +12,31 @@ The source snapshot supplied for this release contains 25,752 CSV records:
 
 This is the approximately 25,000-record dataset described in the paper. The historical experiment export contains 19,887 image–claim entries after the original media-availability and caption-length filters. The exact English and multilingual paper manifests contain 7,052 and 10,368 examples respectively; the paper reports these rounded as 7,000 and 10,000.
 
-## Canonical schema
+## Canonical release schema
 
-Each JSONL row contains:
+`Dataset.csv` is the canonical release. Its 14 columns are:
 
 | Field | Meaning |
 |---|---|
-| `id` | Stable release identifier |
-| `source`, `language` | Fact-check source and ISO language code |
-| `claim`, `image_url` | Multimodal model input and retrievable media URL |
-| `label_source` | Original website-specific verdict |
-| `label_five` | Harmonized five-level label |
-| `label_binary` | Paper task label: 0 authentic, 1 disinformation |
-| `explanation` | Supportive explanation used by the enhanced method |
-| `fact_check_url` | Original fact-check article |
-| `claim_source_url` | Original declaration/content link when available |
-| `evidence_urls`, `evidence_domains` | Cited external sources and normalized domains |
-| `published_at`, `collected_at` | Source and collection timestamps |
-| `keywords`, `tags` | Source and enrichment metadata |
-| `quality_flags` | Missing or unresolved fields requiring review |
+| `Num` | Unique historical record identifier |
+| `Website`, `Date` | Fact-checking source and source publication date |
+| `Image`, `Claim` | Source image URL and assessed claim |
+| `Evaluation` | Harmonized five-level evaluation |
+| `Label` | Original source-specific verdict |
+| `Keywords`, `Tags` | Source and evidence enrichment metadata |
+| `Article Link` | Fact-checking article URL |
+| `Declaration Link` | Original statement/content URL when available |
+| `Explanation` | Supportive explanation used by the enhanced method |
+| `Article sources` | Cited evidence URLs |
+| `Process` | Evidence domains retained by the frequency filter |
 
-Run `disinfomm validate FILE.jsonl` after every conversion or download.
+Experiment JSONL is a generated convenience format, not a second dataset. Run `disinfomm prepare-experiments Dataset.csv OUTPUT ...` to create it together with an audit file.
 
 ## Media
 
-The materials recovered for this release contain media URLs but no image files: both historical `images/` directories are empty. Consequently, the release is metadata-first and includes a resumable downloader. Downloaded files are accompanied by a SHA-256 index and a failure log. URL availability can change over time.
+The materials recovered for this release contain media URLs but no complete image collection: both supplied historical `images/` directories are empty. Consequently, the release contains the original CSV and a resumable downloader. Downloaded files are accompanied by a SHA-256 index and a failure log. URL availability can change over time.
 
-Paper reproduction requires the images corresponding to the exact manifests. When an original URL is unavailable, recover the media only from an authorized archive or an author-held backup and preserve the manifest ID.
+Paper reproduction requires the images corresponding to the selected manifests. When an original URL is unavailable, recover the media only from an authorized archive or an author-held backup and preserve the record ID.
 
 ## Rights and responsible use
 

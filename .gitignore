@@ -198,6 +198,8 @@ cython_debug/
 runs/
 collected/
 images/
+media/
+data/splits/
 checkpoints/
 *.pt
 *.pth

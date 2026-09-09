@@ -1,6 +1,11 @@
 import json
 
-from disinfomm.collection.adapters import parse_pagella, parse_poligrafo, parse_snopes
+from disinfomm.collection.adapters import (
+    enrich_pagella,
+    parse_pagella,
+    parse_poligrafo,
+    parse_snopes,
+)
 
 
 def test_parse_snopes_jsonld():
@@ -37,3 +42,39 @@ def test_parse_pagella_api():
     row = parse_pagella(article)
     assert row["language"] == "it"
     assert row["label_five"] == "False"
+
+
+def test_pagella_sparse_declaration_uses_linked_article_section():
+    article = {
+        "id": 12,
+        "date": "2026-01-01",
+        "title": {"rendered": "Una dichiarazione"},
+        "acf": {
+            "sentenza": "Il costo è cento euro",
+            "link": "https://claim.example/",
+            "verdetto": {"testo": "", "in_breve": False},
+            "articolo": {"ID": 99, "post_name": "fact-checking-costo"},
+        },
+        "_embedded": {"wp:term": []},
+    }
+    linked = {
+        "acf": {
+            "editor": [
+                {
+                    "acf_fc_layout": "paragrafo",
+                    "titolo": "Il costo",
+                    "testo": (
+                        "<p>Il costo è cento euro. Il dato è corretto, ma necessita "
+                        "di contesto. <a href='https://evidence.example/a'>Fonte</a></p>"
+                    ),
+                }
+            ]
+        },
+        "_embedded": {
+            "wp:featuredmedia": [{"source_url": "https://example.org/i.jpg"}]
+        },
+    }
+    row = parse_pagella(enrich_pagella(article, linked))
+    assert row["label_five"] == "Mostly True"
+    assert row["image_url"] == "https://example.org/i.jpg"
+    assert row["evidence_domains"] == ["evidence.example"]

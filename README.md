@@ -5,22 +5,24 @@
 [![Code license: MIT](https://img.shields.io/badge/code-MIT-green.svg)](LICENSE)
 [![Data annotations: CC BY 4.0](https://img.shields.io/badge/annotations-CC%20BY%204.0-lightgrey.svg)](DATA_LICENSE.md)
 
-Official code and release tooling for **“A Multilingual, Multimodal Dataset for Disinformation and Out-of-Context Analysis with Rich Supportive Information”**, ICMI 2025, pages 643–651.
+Official code for **“A Multilingual, Multimodal Dataset for Disinformation and Out-of-Context Analysis with Rich Supportive Information”**, ICMI 2025, pages 643–651.
 
-DisinfoMM contains fact-checked image–claim pairs in English, Italian, and Portuguese. Each record preserves a source verdict, a harmonized five-level veracity label, an explanation, evidence links, and provenance metadata. The repository also implements the paper’s image–text baseline, multilingual model, and supportive-information teacher–student objective.
+DisinfoMM contains 25,752 fact-checking records collected from Snopes, Polígrafo, and Pagella Politica. It covers English, Portuguese, and Italian and preserves the claim, image URL, original verdict, harmonized five-level evaluation, explanation, evidence links, and metadata.
 
-> The dataset is distributed separately from this code repository. Images are not committed to GitHub. See [Dataset access](#dataset-access) and [data rights](docs/DATASET.md#rights-and-responsible-use).
+## One dataset file, two code sections
 
-## At a glance
+The original `Dataset.csv` is the sole authoritative dataset file and is prepared separately for Hugging Face at [`Syokan/DisinfoMM`](https://huggingface.co/datasets/Syokan/DisinfoMM). Images are not redistributed; the CSV contains their source URLs.
 
-| Property | Value |
-|---|---|
-| Sources | Snopes, Pagella Politica, Polígrafo |
-| Languages | English, Italian, Portuguese |
-| Snapshot size | 25,752 collected records (approximately 25k in the paper) |
-| Labels | True, Mostly True, Incomplete, Mostly False, False |
-| Paper tasks | Binary multimodal disinformation/OOC detection |
-| Supportive information | Explanations, verdicts, timestamps, keywords, article and evidence links |
+This repository has two intentionally separate workflows:
+
+```text
+collection/                 three website collectors + label/evidence harmonization
+experiments/                CSV subset preparation + five clearly separated model families
+src/disinfomm/              tested reusable implementations used by both workflows
+configs/                    paper-aligned run configurations
+data/paper_splits/archived  exact recovered paper-era derived JSON files
+results/                    final-paper Tables 2–5 in machine-readable form
+```
 
 ## Installation
 
@@ -35,67 +37,93 @@ python -m pip install --upgrade pip
 python -m pip install -e .
 ```
 
-Install optional components only when needed:
+Optional dependencies:
 
 ```bash
-python -m pip install -e '.[train]'    # PyTorch, CLIP, multilingual training
-python -m pip install -e '.[collect]'  # live collection adapters
+python -m pip install -e '.[collect]'  # live website collection
+python -m pip install -e '.[train]'    # PyTorch, CLIP, M-CLIP, SigLIP
 python -m pip install -e '.[dev]'      # tests and linting
 ```
 
-## Dataset access
+## Part 1: collect and harmonize the dataset
 
-The release package is hosted at [Hugging Face: `Syokan/DisinfoMM`](https://huggingface.co/datasets/Syokan/DisinfoMM). After downloading it, validate the metadata before downloading media:
-
-```bash
-disinfomm validate /path/to/disinfomm-v1.0.0.jsonl
-disinfomm download-images /path/to/disinfomm-v1.0.0.jsonl \
-  --output /path/to/DisinfoMM/images
-```
-
-The downloader is resumable and records failures. Source websites retain rights in their articles and media; review [DATA_LICENSE.md](DATA_LICENSE.md) before redistribution.
-
-## Reproduce the paper experiments
-
-The dataset release contains exact paper manifests under `paper_splits/`. Copy or link that directory to `data/paper_splits/`; the manifests are authoritative for sample membership and stored binary labels. Point each manifest at the downloaded media root, then run:
+The source-specific entry points write the same 14-column structure as `Dataset.csv`:
 
 ```bash
-disinfomm train configs/basic_clip.yaml
-disinfomm train configs/multilingual_clip.yaml
-disinfomm train configs/supportive_clip.yaml
+python collection/collect_snopes.py --output collected/snopes.csv --pages 1
+python collection/collect_poligrafo.py --output collected/poligrafo.csv --pages 1
+python collection/collect_pagella.py --output collected/pagella.csv --pages 1
 ```
 
-Evaluate a saved checkpoint:
+Normalize the five-level `Evaluation` column and regenerate the evidence-domain lists described in the paper:
 
 ```bash
-disinfomm train configs/basic_clip.yaml --evaluate-only --checkpoint runs/basic_clip/best.pt
+python collection/harmonize.py collected/combined.csv collected/harmonized.csv \
+  --source-lists collected/source_lists
 ```
 
-Paper hyperparameters are the defaults in the configs: 30 epochs, batch size 64, six workers, Adam, classifier learning rate `5e-5`, CLIP learning rate `5e-7`, dropout `0.1`, and weight decay `1.2e-6`. Full instructions and known differences between the archived research scripts and this release are in [docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md).
+The harmonizer preserves `Label` as the source-specific verdict. Unknown values remain `Unknown` for review. See [collection/README.md](collection/README.md) and [docs/LABELS.md](docs/LABELS.md).
 
-## Update or extend the dataset
+## Part 2: prepare and run experiments
 
-The collector runs incrementally and never overwrites existing records:
+The full CSV is not class-balanced. Reproduce the paper’s sampling principle directly from the CSV:
 
 ```bash
-disinfomm collect snopes --output collected/snopes.jsonl --pages 1
-disinfomm collect poligrafo --output collected/poligrafo.jsonl --pages 1
-disinfomm collect pagella --output collected/pagella.jsonl --pages 1
+python experiments/prepare_data.py /path/to/Dataset.csv data/splits/english \
+  --regime english --size 7000 --fake-ratio 0.5 --seed 1111
+
+python experiments/prepare_data.py /path/to/Dataset.csv data/splits/multilingual \
+  --regime multilingual --size 10000 --fake-ratio 0.5 --seed 1111
 ```
 
-Websites change. Every collection run stores its timestamp and source URL; unknown labels remain `Unknown` for manual review rather than being silently guessed. Use a descriptive user agent, obey each site’s terms and robots policy, and rate-limit requests. See [docs/COLLECTION.md](docs/COLLECTION.md).
+This creates deterministic 8:1:1 splits in both self-contained JSONL and the historical `data.json`/annotation JSON format. Every run writes `audit.json` with the input CSV hash, exclusions, selected labels, sources, and split sizes.
 
-## Repository map
+Download media referenced by the chosen subset:
+
+```bash
+disinfomm download-images data/splits/english/jsonl/train.jsonl --output media
+```
+
+The downloader resumes existing files and records failures and SHA-256 hashes. Media availability may differ from the paper-era snapshot because the source websites control the URLs.
+
+### Experiment families
+
+| Group | Command | Meaning |
+|---|---|---|
+| Comparison: ordinary | `python experiments/comparison/basic/run.py` | Recovered CLIP product-fusion baseline |
+| Comparison: multi | `python experiments/comparison/multilingual/run.py` | Recovered multilingual text encoder variant |
+| Comparison: latest | `python experiments/comparison/latest/run.py` | Recovered later SigLIP experiment; not a final-paper method |
+| Proposed: ordinary | `python experiments/proposed/basic/run.py` | Paper Section 4.2, without supportive information |
+| Proposed: with evidence | `python experiments/proposed/with_evidence/run.py` | Paper Section 4.3, explanation-guided teacher-student training |
+
+The final paper also reports an external Evidence-based CLIP comparison using online retrieval. It is different from the proposed “with evidence” model; see [docs/EXTERNAL_BASELINES.md](docs/EXTERNAL_BASELINES.md).
+
+Paper settings are encoded in `configs/`: Adam, 30 epochs, batch size 64, six workers, classifier learning rate `5e-5`, backbone learning rate `5e-7`, dropout `0.1`, and weight decay `1.2e-6`. The memory-intensive SigLIP configuration uses the recovered batch size 16 and four workers.
+
+## Recovered files versus reconstructed implementations
+
+The supplied local archive contained the three comparison families and the historical CSV-to-JSON formatter. A complete implementation of the paper’s two proposed architectures was not found, so those two models were reconstructed from Sections 4.2 and 4.3 of the final paper. [docs/SOURCE_CODE_AUDIT.md](docs/SOURCE_CODE_AUDIT.md) records exactly what was found, what was corrected, and what was reconstructed.
+
+The exact recovered experiment JSON files are kept under `data/paper_splits/archived/`. They contain 7,052 English and 10,368 multilingual examples—the exact counts behind the paper’s rounded 7k/10k description. For new experiments, generate fresh audited subsets from `Dataset.csv` rather than treating the archived `data.json` as another dataset release.
+
+## Dataset labels
+
+The normalized five-level scheme is:
 
 ```text
-configs/                 paper-aligned training configurations
-data/examples/           synthetic, redistributable smoke-test records
-data/paper_splits/       location for dataset-release experiment manifests
-docs/                    dataset, collection, labels, and reproduction guides
-results/                 tables reported in the paper
-src/disinfomm/           reusable collection, data, model, and evaluation code
-tests/                   offline unit tests
+True → Mostly True → Incomplete → Mostly False → False
 ```
+
+For the paper’s binary task, `True` and `Mostly True` are authentic (`0`); `Incomplete`, `Mostly False`, and `False` are disinformation (`1`). The two unresolved CSV rows are excluded from binary subsets until reviewed. Source-specific mappings and historical spelling variants are listed in [docs/LABELS.md](docs/LABELS.md).
+
+## Tests
+
+```bash
+python -m pytest -q
+ruff check .
+```
+
+Tests are offline and cover label mapping, CSV preservation, balanced deterministic sampling, source adapters, source-domain lists, metrics, split disjointness, and the proposed teacher loss.
 
 ## Citation
 
@@ -110,10 +138,8 @@ tests/                   offline unit tests
 }
 ```
 
-## Contact
+## Contact and licenses
 
 Shuhan Cui — The University of Tokyo — `syokan [at] g.ecc.u-tokyo.ac.jp`
 
-## Licenses
-
-Code is released under the [MIT License](LICENSE). Dataset annotations and original metadata contributed by the DisinfoMM authors are released under [CC BY 4.0](DATA_LICENSE.md). Third-party text, images, trademarks, and linked resources are not relicensed; see [THIRD_PARTY.md](THIRD_PARTY.md).
+Code is under the [MIT License](LICENSE). Author-created dataset annotations and harmonized metadata are under [CC BY 4.0](DATA_LICENSE.md). Source articles, images, quotations, trademarks, and linked evidence are not relicensed; see [THIRD_PARTY.md](THIRD_PARTY.md).

@@ -2,17 +2,21 @@
 
 ## What is reproduced
 
-This repository implements the paper’s three in-repository architectures:
+This repository implements five clearly named local architectures:
 
-- basic CLIP: ViT-B/32 image/text encoders, LayerNorm, learned scalar fusion, and an MLP;
-- multilingual CLIP: CLIP image features with `M-CLIP/XLM-Roberta-Large-Vit-L-14` text features projected into the shared space;
-- supportive-information model: a teacher–student objective using the explanation during training and image–claim inputs at inference.
+- comparison basic: recovered ViT-B/32 product-fusion classifier;
+- comparison multilingual: recovered CLIP image and M-CLIP/XLM-R text classifier;
+- comparison latest: recovered SigLIP exploratory variant;
+- proposed basic: paper Section 4.2 LayerNorm, scalar fusion, and MLP;
+- proposed with evidence: paper Section 4.3 explanation-guided teacher-student model.
 
-The external evidence-based comparison and the DT-Transformer-derived comparison require their upstream repositories and separately licensed datasets. They are documented as baselines rather than vendored.
+The paper’s external online-retrieval Evidence-based CLIP comparison requires its upstream repository and separately gathered evidence. It is documented in `EXTERNAL_BASELINES.md` rather than vendored.
 
 ## Exact data membership
 
-Use `paper_splits/english/` and `paper_splits/multilingual/` from the dataset release, copied or linked into `data/paper_splits/`. These files are rebuilt from the archived annotation files and preserve each stored `falsified` label. The English split has 5,641/706/705 train/validation/test entries; the multilingual split has 8,294/1,037/1,037.
+The authoritative release is `Dataset.csv`. Generate a current, deterministic balanced subset with `experiments/prepare_data.py`; this writes the self-contained manifests expected by the five configs and an audit file containing the CSV hash and sampling choices.
+
+For historical auditing, `data/paper_splits/archived/` preserves the exact old `data.json` and annotation JSON. The English split has 5,641/706/705 train/validation/test entries; the multilingual split has 8,294/1,037/1,037. These files reference missing local images and should not be mistaken for an independent dataset.
 
 The historical files named `test_original` and `val_original` were identical full-dataset intermediates, as were the `*_english` and `*_other` pairs. They are intentionally excluded from the public experiment interface because they are not independent splits.
 

@@ -145,16 +145,57 @@ def _pagella_label(article: dict) -> str:
     verdict = acf.get("verdetto") or {}
     text = verdict.get("testo", "") if isinstance(verdict, dict) else str(verdict)
     title = html_module.unescape(str((article.get("title") or {}).get("rendered", "")))
-    combined = f"{title} {text}".lower()
+    supporting = str(article.get("_supporting_text", ""))
+    combined = f"{title} {text} {supporting}".lower()
     if any(x in combined for x in ("non è vero", "falso", "panzana", "pinocchio")):
         return "False"
     if any(x in combined for x in ("fuorviante", "imprecis", "ingannevol", "nì", "nì")):
         return "Mostly False"
-    if any(x in combined for x in ("esagerat", "quasi vero", "c'eri quasi", "parzialmente")):
+    if any(
+        x in combined
+        for x in (
+            "esagerat",
+            "quasi vero",
+            "c'eri quasi",
+            "parzialmente",
+            "corretti, ma",
+            "corretto, ma",
+            "corretta, ma",
+            "ha ragione, ma",
+            "troppo netto",
+        )
+    ):
         return "Mostly True"
     if any(x in combined for x in ("è vero", "ha ragione", "vero")):
         return "True"
     return "Unknown"
+
+
+def enrich_pagella(article: dict, linked_post: dict) -> dict:
+    """Attach the matching article section when the declaration endpoint is sparse."""
+
+    enriched = dict(article)
+    claim = str((article.get("acf") or {}).get("sentenza") or "")
+    claim_tokens = set(re.findall(r"\w+", claim.lower()))
+    best_score = -1.0
+    best_html = ""
+    for section in (linked_post.get("acf") or {}).get("editor") or []:
+        if not isinstance(section, dict) or section.get("acf_fc_layout") != "paragrafo":
+            continue
+        section_html = str(section.get("testo") or "")
+        section_text = _soup(section_html).get_text(" ", strip=True)
+        section_tokens = set(re.findall(r"\w+", section_text.lower()))
+        overlap = len(claim_tokens & section_tokens) / max(1, len(claim_tokens))
+        contains = bool(claim and claim.lower() in section_text.lower())
+        score = overlap + (2.0 if contains else 0.0)
+        if score > best_score:
+            best_score = score
+            best_html = section_html
+    if best_html and best_score >= 0.25:
+        enriched["_supporting_html"] = best_html
+        enriched["_supporting_text"] = _soup(best_html).get_text(" ", strip=True)
+    enriched["_linked_post"] = linked_post
+    return enriched
 
 
 def parse_pagella(article: dict) -> dict:
@@ -167,7 +208,13 @@ def parse_pagella(article: dict) -> dict:
         short = verdict.get("in_breve")
         if isinstance(short, list):
             explanation += " " + " ".join(str(x.get("testo", "")) for x in short if isinstance(x, dict))
+    if not explanation.strip():
+        explanation = str(article.get("_supporting_text", ""))
     media = (article.get("_embedded") or {}).get("wp:featuredmedia") or []
+    if not media:
+        media = (
+            (article.get("_linked_post") or {}).get("_embedded") or {}
+        ).get("wp:featuredmedia") or []
     image = media[0].get("source_url", "") if media else ""
     terms = (article.get("_embedded") or {}).get("wp:term") or []
     keywords = [
@@ -179,10 +226,12 @@ def parse_pagella(article: dict) -> dict:
     fact_url = article.get("link", "")
     if isinstance(linked_article, dict) and linked_article.get("post_name"):
         fact_url = f"https://pagellapolitica.it/articoli/{linked_article['post_name']}"
+    supporting_html = str(article.get("_supporting_html", ""))
+    evidence_urls = _links(_soup(f"<article>{supporting_html}</article>"), str(fact_url))
     return _record(
         source="pagella", source_id=str(article.get("id", "")), claim=str(claim),
         source_label=_pagella_label(article), explanation=explanation,
         image_url=image, fact_check_url=str(fact_url),
         published_at=str(article.get("date", "")), keywords=keywords,
-        evidence_urls=[], claim_source_url=str(acf.get("link") or ""),
+        evidence_urls=evidence_urls, claim_source_url=str(acf.get("link") or ""),
     )

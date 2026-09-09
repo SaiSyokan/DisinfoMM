@@ -9,6 +9,7 @@ import time
 import urllib.request
 from pathlib import Path
 
+from .csv_dataset import read_dataset_csv
 from .io import read_jsonl, utc_now
 
 
@@ -25,7 +26,8 @@ def download_images(
     failures = output / "download_failures.jsonl"
     index_path = output / "media_index.jsonl"
     counts = {"downloaded": 0, "existing": 0, "failed": 0, "skipped": 0}
-    for position, record in enumerate(read_jsonl(manifest)):
+    records = read_dataset_csv(manifest) if manifest.suffix.lower() == ".csv" else read_jsonl(manifest)
+    for position, record in enumerate(records):
         if limit is not None and position >= limit:
             break
         url = str(record.get("image_url", ""))
